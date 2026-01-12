@@ -64,6 +64,7 @@ region=eu&realm=Ravencrest&name=Ababagalamaga
 region=eu&realm=Ravencrest&name=Tovarystvo Zolotyy Husak
 region=eu&realm=Ravencrest&name=Unite for Ukraine
 region=eu&realm=Ravencrest&name=CBITAHOK KPOBI
+region=eu&realm=Ravencrest&name=Cemetery Wind
 region=eu&realm=Twisting Nether&name=Morok
 region=eu&realm=Twisting Nether&name=Glory to Ukraine
 region=eu&realm=Twisting Nether&name=Enter Game Mode
