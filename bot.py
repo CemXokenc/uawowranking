@@ -4,6 +4,7 @@ import aiohttp
 import asyncio
 import re
 from discord import app_commands
+from collections import defaultdict     
 from config import token
 
 # Initialize intents and client
@@ -302,90 +303,85 @@ async def rank(interaction, top: int = 10, classes: str = "all", guilds: str = "
         print(f"An error occurred while processing the rank command: {e}")
         await interaction.followup.send("An error occurred while processing the command. Please try again later.")
             
-@tree.command(name="tournament", description="Get top players in a guild for a tournament")
+async def send_tournament(interaction, members_data, top: int, format_type: str, title: str):
+    melee_specs = ["frost", "unholy", "havoc", "feral", "survival", "windwalker",
+                   "retribution", "assassination", "outlaw", "subtlety", "enhancement",
+                   "arms", "fury"]
+    ranged_specs = ["balance", "augmentation", "devastation", "beast mastery",
+                    "marksmanship", "arcane", "fire", "frost", "shadow", "elemental",
+                    "affliction", "demonology", "destruction"]
+
+    if format_type == "new":
+        categories = [
+            ("Tanks", lambda m: m.get('rio_tank', 0) >= 1000, "rio_tank"),
+            ("Healers", lambda m: m.get('rio_healer', 0) >= 1000, "rio_healer"),
+            ("Melee DPS", lambda m: m.get('active_spec_name', '').lower() in melee_specs and m['class'] != 'Mage', "rio_dps"),
+            ("Ranged DPS", lambda m: m.get('active_spec_name', '').lower() in ranged_specs and m['class'] != 'Death Knight', "rio_dps"),
+        ]
+    elif format_type == "old":
+        categories = [
+            ("Tanks", lambda m: m.get('rio_tank', 0) >= 1000, "rio_tank"),
+            ("Healers", lambda m: m.get('rio_healer', 0) >= 1000, "rio_healer"),
+            ("DPS", lambda m: m.get('rio_dps', 0) >= 1000, "rio_dps"),
+        ]
+    else:
+        await interaction.response.send_message("Invalid format. Use 'new' or 'old'.", ephemeral=True)
+        return
+
+    await interaction.response.send_message(title)
+
+    max_len = 2000
+    for cat_name, filter_func, rating_key in categories:
+        top_players = sorted(filter(filter_func, members_data), key=lambda x: x.get(rating_key, 0), reverse=True)[:top]
+        message = f"\n{cat_name}:\n"
+        for i, m in enumerate(top_players):
+            message += f"{i+1}. {m['name']} ({m.get('guild','N/A')}) - {m.get('active_spec_name','N/A')} {m.get('class','N/A')} - {m.get(rating_key,'N/A')}\n"
+
+        # Send in chunks
+        for i in range(0, len(message), max_len):
+            await interaction.followup.send(message[i:i+max_len])
+
+@tree.command(name="tournament_custom", description="Get top players for a tournament from Google Sheet or file")
 @app_commands.describe(
-    guild="Guild name for the tournament",
-    top="Number of players to display (default: 5)",
+    top="Number of players to display (default: 10)",
     format="Data source format: new or old (default: new)"
 )
-async def tournament(interaction, guild: str = "Нехай Щастить", top: int = 5, format: str = "new"):
-    # Determine the data source based on the 'format' parameter
-    if format == "new":
-        data_file = 'tournament.json'
-        filter_guild = False
-    elif format == "old":
-        data_file = 'members.json'
-        filter_guild = True
-    else:
-        await interaction.response.send_message("Invalid format. Please use 'new' or 'old'.", ephemeral=True)
+async def tournament_custom(interaction, top: int = 10, format: str = "new"):
+    # Fetch data from your source
+    try:
+        with open("tournament.json", "r", encoding="utf-8") as f:
+            members_data = json.load(f)
+    except Exception:
+        await interaction.response.send_message("Cannot read tournament.json", ephemeral=True)
         return
 
-    # Read data from the selected JSON file
-    with open(data_file, 'r', encoding='utf-8') as file:
-        members_data = json.load(file)
+    await send_tournament(interaction, members_data, top, format, f"Top {top} players:")
 
-    # Checking the existence of data in the file
-    if not members_data:
-        await interaction.response.send_message(f"No data to process in '{data_file}'.", ephemeral=True)
+@tree.command(name="tournament", description="Get top players from guild for a tournament")
+@app_commands.describe(
+    guild="Guild name (default: Фортеця)",
+    top="Number of players to display (default: 10)",
+    format="Data source format: new or old (default: old)"
+)
+async def tournament(interaction: discord.Interaction, guild: str = "Фортеця", top: int = 10, format: str = "old"):
+    try:
+        with open("members.json", "r", encoding="utf-8") as f:
+            members_data = json.load(f)
+    except Exception:
+        await interaction.response.send_message("Cannot read members.json", ephemeral=True)
         return
 
-    if filter_guild:
-        # Filter by guild if needed
-        guild_members = [member for member in members_data if member['guild'].lower() == guild.lower()]
-
-        if not guild_members:
-            await interaction.response.send_message(f"No data available for the guild '{guild}'.", ephemeral=True)
-            return
-    else:
-        # Use all members from the file
-        guild_members = members_data
-
-    # Define desired specs for melee and ranged DPS
-    melee_specs = ["frost", "unholy", "havoc", "feral", "survival", "windwalker", "retribution", "assassination", "outlaw", "subtlety", "enhancement", "arms", "fury"]
-    ranged_specs = ["balance", "augmentation", "devastation", "beast mastery", "marksmanship", "arcane", "fire", "frost", "shadow", "elemental", "affliction", "demonology", "destruction"]
-
-    # Get top players for each category
-    top3_tank = sorted(
-        [member for member in guild_members if member.get('rio_tank', 0) >= 1000],
-        key=lambda x: max(x.get('rio_tank', 0), 0),
-        reverse=True
-    )[:top]
-    top3_healer = sorted(
-        [member for member in guild_members if member.get('rio_healer', 0) >= 1000],
-        key=lambda x: max(x.get('rio_healer', 0), 0),
-        reverse=True
-    )[:top]
-    top3_mdd = sorted([member for member in guild_members if member.get('active_spec_name') and member['active_spec_name'].lower() in melee_specs and member['class'] != 'Mage'], key=lambda x: max(x.get('rio_dps', 0), 0), reverse=True)[:top]
-    top3_rdd = sorted([member for member in guild_members if member.get('active_spec_name') and member['active_spec_name'].lower() in ranged_specs and member['class'] != 'Death Knight'], key=lambda x: max(x.get('rio_dps', 0), 0), reverse=True)[:top]
-
-    # Send initial response to acknowledge the command
-    await interaction.response.send_message(f"Top {top} Players for the Tournament:")
-
-    # Create and send messages for each category separately
-    categories = [
-        ("Tanks", top3_tank, "rio_tank"),
-        ("Healers", top3_healer, "rio_healer"),
-        ("Melee DPS", top3_mdd, "rio_dps"),
-        ("Ranged DPS", top3_rdd, "rio_dps"),
+    # FILTER BY GUILD (safe)
+    guild_members = [
+        m for m in members_data
+        if str(m.get('guild') or '').lower() == guild.lower()
     ]
+    
+    if not guild_members:
+        await interaction.response.send_message(f"No data for guild '{guild}'", ephemeral=True)
+        return
 
-    for category_name, top_players, rating_key in categories:
-        result_message = f"\n{category_name}:\n"
-        for i, member in enumerate(top_players):
-            if format == "new":
-                result_message += f"{i + 1}. {member['name']} ({member['guild']}) - {member['active_spec_name']} {member['class']} - {member.get(rating_key, 'N/A')}\n"
-            else:
-                result_message += f"{i + 1}. {member['name']} - {member['active_spec_name']} {member['class']} - {member.get(rating_key, 'N/A')}\n"
-
-        # Split the result message into chunks and send each part
-        max_message_length = 2000
-        for i in range(0, len(result_message), max_message_length):
-            chunk = result_message[i:i + max_message_length]
-            await interaction.followup.send(chunk)
-       
-from collections import defaultdict
-import discord
-from discord import app_commands
+    await send_tournament(interaction, guild_members, top, format, f"Top {top} Players for guild '{guild}':")
 
 @tree.command(name="uwf", description="Ukrainian WoW First ranks")
 @app_commands.describe(
