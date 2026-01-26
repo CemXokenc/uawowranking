@@ -303,44 +303,80 @@ async def rank(interaction, top: int = 10, classes: str = "all", guilds: str = "
         print(f"An error occurred while processing the rank command: {e}")
         await interaction.followup.send("An error occurred while processing the command. Please try again later.")
             
-async def send_tournament(interaction, members_data, top: int, format_type: str, title: str):
-    melee_specs = ["frost", "unholy", "havoc", "feral", "survival", "windwalker",
-                   "retribution", "assassination", "outlaw", "subtlety", "enhancement",
-                   "arms", "fury"]
-    ranged_specs = ["balance", "augmentation", "devastation", "beast mastery",
-                    "marksmanship", "arcane", "fire", "frost", "shadow", "elemental",
-                    "affliction", "demonology", "destruction"]
+async def send_tournament(interaction, members_data, top=5, format="new", header="Top Players:", show_guild=True):
+    """
+    Sends top players in categories for tournament.
+    
+    :param interaction: discord.Interaction
+    :param members_data: list of dicts with player data
+    :param top: number of top players to display
+    :param format: "new" or "old"
+    :param header: header message to send before the lists
+    :param show_guild: whether to display the guild name in each row
+    """
+    melee_specs = [
+        "frost", "unholy", "havoc", "feral", "survival", "windwalker",
+        "retribution", "assassination", "outlaw", "subtlety", "enhancement",
+        "arms", "fury"
+    ]
+    ranged_specs = [
+        "balance", "augmentation", "devastation", "beast mastery", "marksmanship",
+        "arcane", "fire", "frost", "shadow", "elemental", "affliction",
+        "demonology", "destruction"
+    ]
 
-    if format_type == "new":
+    # Define categories depending on format
+    if format == "new":
         categories = [
-            ("Tanks", lambda m: m.get('rio_tank', 0) >= 1000, "rio_tank"),
-            ("Healers", lambda m: m.get('rio_healer', 0) >= 1000, "rio_healer"),
-            ("Melee DPS", lambda m: m.get('active_spec_name', '').lower() in melee_specs and m['class'] != 'Mage', "rio_dps"),
-            ("Ranged DPS", lambda m: m.get('active_spec_name', '').lower() in ranged_specs and m['class'] != 'Death Knight', "rio_dps"),
+            ("Tanks", lambda m: (m.get('rio_tank') or 0) >= 1000, "rio_tank"),
+            ("Healers", lambda m: (m.get('rio_healer') or 0) >= 1000, "rio_healer"),
+            ("Melee DPS", lambda m: (m.get('active_spec_name') or '').lower() in melee_specs and (m.get('class') or '') != 'Mage', "rio_dps"),
+            ("Ranged DPS", lambda m: (m.get('active_spec_name') or '').lower() in ranged_specs and (m.get('class') or '') != 'Death Knight', "rio_dps")
         ]
-    elif format_type == "old":
+    elif format == "old":
         categories = [
-            ("Tanks", lambda m: m.get('rio_tank', 0) >= 1000, "rio_tank"),
-            ("Healers", lambda m: m.get('rio_healer', 0) >= 1000, "rio_healer"),
-            ("DPS", lambda m: m.get('rio_dps', 0) >= 1000, "rio_dps"),
+            ("Tanks", lambda m: (m.get('rio_tank') or 0) >= 1000, "rio_tank"),
+            ("Healers", lambda m: (m.get('rio_healer') or 0) >= 1000, "rio_healer"),
+            ("DPS", lambda m: (m.get('rio_dps') or 0) >= 1000, "rio_dps")
         ]
     else:
         await interaction.response.send_message("Invalid format. Use 'new' or 'old'.", ephemeral=True)
         return
 
-    await interaction.response.send_message(title)
+    # Send header message
+    await interaction.response.send_message(header)
 
-    max_len = 2000
-    for cat_name, filter_func, rating_key in categories:
-        top_players = sorted(filter(filter_func, members_data), key=lambda x: x.get(rating_key, 0), reverse=True)[:top]
-        message = f"\n{cat_name}:\n"
-        for i, m in enumerate(top_players):
-            message += f"{i+1}. {m['name']} ({m.get('guild','N/A')}) - {m.get('active_spec_name','N/A')} {m.get('class','N/A')} - {m.get(rating_key,'N/A')}\n"
+    # Iterate over categories and send messages
+    for category_name, filter_func, rating_key in categories:
+        top_players = sorted(
+            filter(filter_func, members_data),
+            key=lambda x: x.get(rating_key, 0),
+            reverse=True
+        )[:top]
 
-        # Send in chunks
+        if not top_players:
+            continue  # skip empty categories
+
+        message = f"\n**{category_name}:**\n"
+        for i, m in enumerate(top_players, 1):
+            name = m.get('name', 'N/A')
+            spec = m.get('active_spec_name', 'N/A')
+            cls = m.get('class', 'N/A')
+            rating = m.get(rating_key, 'N/A')
+
+            if show_guild:
+                guild = m.get('guild', 'N/A')
+                message += f"{i}. {name} ({guild}) - {spec} {cls} - {rating}\n"
+            else:
+                message += f"{i}. {name} - {spec} {cls} - {rating}\n"
+
+        # Split message into chunks of max 2000 characters
+        max_len = 2000
         for i in range(0, len(message), max_len):
             await interaction.followup.send(message[i:i+max_len])
 
+
+# Command: tournament_custom (shows guild)
 @tree.command(name="tournament_custom", description="Get top players for a tournament from Google Sheet or file")
 @app_commands.describe(
     top="Number of players to display (default: 10)",
@@ -355,8 +391,10 @@ async def tournament_custom(interaction, top: int = 10, format: str = "new"):
         await interaction.response.send_message("Cannot read tournament.json", ephemeral=True)
         return
 
-    await send_tournament(interaction, members_data, top, format, f"Top {top} players:")
+    await send_tournament(interaction, members_data, top, format, f"Top {top} players:", show_guild=True)
 
+
+# Command: tournament (filtered by guild, hide guild names)
 @tree.command(name="tournament", description="Get top players from guild for a tournament")
 @app_commands.describe(
     guild="Guild name (default: Фортеця)",
@@ -381,7 +419,7 @@ async def tournament(interaction: discord.Interaction, guild: str = "Форте�
         await interaction.response.send_message(f"No data for guild '{guild}'", ephemeral=True)
         return
 
-    await send_tournament(interaction, guild_members, top, format, f"Top {top} Players for guild '{guild}':")
+    await send_tournament(interaction, guild_members, top, format, f"Top {top} Players for guild '{guild}':", show_guild=False)
 
 @tree.command(name="uwf", description="Ukrainian WoW First ranks")
 @app_commands.describe(
