@@ -382,6 +382,156 @@ async def tournament(interaction, guild: str = "Нехай Щастить", top:
         for i in range(0, len(result_message), max_message_length):
             chunk = result_message[i:i + max_message_length]
             await interaction.followup.send(chunk)
+       
+from collections import defaultdict
+import discord
+from discord import app_commands
+
+@tree.command(name="uwf", description="Ukrainian WoW First ranks")
+@app_commands.describe(
+    mode="df | tww | champs | stats"
+)
+async def uwf(
+    interaction: discord.Interaction,
+    mode: str | None = None
+):
+    await interaction.response.defer()
+
+    with open("uwf.txt", "r", encoding="utf-8") as file:
+        lines = file.readlines()
+
+    # -------------------------
+    # Parsing state
+    # -------------------------
+    current_expansion = None
+    current_season = None
+    rank_counter = 0
+
+    data = []  # structured data
+    guild_stats = defaultdict(list)
+    champs_counter = defaultdict(int)
+
+    for line in lines:
+        stripped = line.strip()
+
+        if not stripped:
+            continue
+
+        # Expansion
+        if stripped in {"Dragonflight", "The War Within"}:
+            current_expansion = stripped
+            continue
+
+        # Season
+        if stripped.startswith("Season"):
+            current_season = stripped
+            rank_counter = 0
+            continue
+
+        # Guild line
+        rank_counter += 1
+
+        guild_name = stripped.split(",")[0]
+
+        entry = {
+            "expansion": current_expansion,
+            "season": current_season,
+            "rank": rank_counter,
+            "text": stripped,
+            "guild": guild_name
+        }
+
+        data.append(entry)
+        guild_stats[guild_name].append(rank_counter)
+
+        if rank_counter == 1:
+            champs_counter[guild_name] += 1
+
+    # -------------------------
+    # MODE HANDLING
+    # -------------------------
+    output = []
+
+    if mode is None:
+        # FULL LIST
+        output.append("## Dragonflight")
+        output += build_expansion(data, "Dragonflight")
+
+        output.append("\n## The War Within")
+        output += build_expansion(data, "The War Within")
+
+    elif mode.lower() == "df":
+        output.append("## Dragonflight")
+        output += build_expansion(data, "Dragonflight")
+
+    elif mode.lower() == "tww":
+        output.append("## The War Within")
+        output += build_expansion(data, "The War Within")
+
+    elif mode.lower() == "champs":
+        output.append("## 🏆 Champions")
+
+        sorted_champs = sorted(
+            champs_counter.items(),
+            key=lambda x: (-x[1], sum(guild_stats[x[0]]) / len(guild_stats[x[0]]))
+        )
+
+        output.append("```")
+        for i, (guild, wins) in enumerate(sorted_champs, 1):
+            output.append(f"{str(i).rjust(2)}. {guild} — {wins} wins")
+        output.append("```")
+
+    elif mode.lower() == "stats":
+        output.append("## 📊 Guild statistics")
+
+        sorted_stats = sorted(
+            guild_stats.items(),
+            key=lambda x: (-len(x[1]), min(x[1]))
+        )
+
+        output.append("```")
+        for i, (guild, ranks) in enumerate(sorted_stats, 1):
+            output.append(
+                f"{str(i).rjust(2)}. {guild} — {len(ranks)} entries | best rank: {min(ranks)}"
+            )
+        output.append("```")
+
+    else:
+        await interaction.followup.send("Unknown mode.")
+        return
+
+    await send_long_message(interaction, "\n".join(output))
+
+def build_expansion(data, expansion_name):
+    result = []
+    current_season = None
+    counter = 0
+    in_block = False
+
+    for entry in data:
+        if entry["expansion"] != expansion_name:
+            continue
+
+        if entry["season"] != current_season:
+            if in_block:
+                result.append("```")
+                in_block = False
+
+            current_season = entry["season"]
+            counter = 0
+            result.append(f"**{current_season}**")
+
+        if not in_block:
+            result.append("```")
+            in_block = True
+
+        counter += 1
+        result.append(f"{str(counter).rjust(2)}. {entry['text']}")
+
+    if in_block:
+        result.append("```")
+
+    return result
         
 # Command "About us"
 @tree.command(name="about_us", description="About us")
@@ -412,6 +562,12 @@ async def help_command(interaction):
             "\n/tournament - Get top players in each category.\n"            
             "       -guild: Top players of which guild will be searched.\n"
             "       -top: Top X players.\n"
+            
+            "\n/uwf - Ukrainian World First. Shows raid ranking history of Ukrainian guilds.\n"            
+            "       -df: Shows only Dragonflight seasons and rankings.\n"
+            "       -tww: Shows only The War Within seasons and rankings.\n"
+            "       -champs: Displays guilds that finished 1st place at least once.\n"
+            "       -stats: Displays all guilds that appeared in the rankings.\n"
             
             "\n/about_us - Learn more about us.\n"
             
