@@ -20,6 +20,7 @@ region=eu&realm=Tarren Mill&name=WHITEHOST
 region=eu&realm=Tarren Mill&name=KBAC TAPAC
 region=eu&realm=Tarren Mill&name=QuadHorders
 region=eu&realm=Tarren Mill&name=Sich Happens Legion
+region=eu&realm=Tarren Mill&name=TheHorsemen
 region=eu&realm=Hellscream&name=Grim
 region=eu&realm=Howling Fjord&name=Нехай Щастить
 region=eu&realm=Howling Fjord&name=Бавовна
