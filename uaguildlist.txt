@@ -57,6 +57,8 @@ region=eu&realm=Silvermoon&name=Legacy of the Kaldorei
 region=eu&realm=Silvermoon&name=NightRoutine
 region=eu&realm=Silvermoon&name=BURSHTYN
 region=eu&realm=Silvermoon&name=Knights of Elune
+region=eu&realm=Silvermoon&name=DUSHA
+region=eu&realm=Silvermoon&name=Azurion
 region=eu&realm=Kazzak&name=Borsch Battalion
 region=eu&realm=Kazzak&name=Hwg
 region=eu&realm=Kazzak&name=UKRAINIAN GUILD
