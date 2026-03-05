@@ -23,26 +23,27 @@ def read_guild_data(file_path='uaguildlist.txt'):
         return []
 
 # Asynchronous function to fetch guild data
-async def fetch_guild_data(guild_url, tier):
+async def fetch_guild_data(guild_url, tiertier):
     prefix = "http://raider.io/api/v1/guilds/profile?"
     postfix = "&fields=raid_rankings,raid_progression"
     
     switch_dict = {
-        1: "nerubar-palace",
-        2: "liberation-of-undermine",
-        3: "manaforge-omega"
+        1: "tier-mn-1",
+        2: "",
+        3: ""
     }
     raid = switch_dict.get(tier)
     
     current_bosses_names = {
-        1: "plexus-sentinel",
-        2: "soulbinder-naazindhri",
-        3: "loomithar",
-        4: "forgeweaver-araz",
-        5: "fractillus",
-        6: "the-soul-hunters",
-        7: "nexus-king-salhadaar",
-        8: "dimensius"
+        1: "imperator-averzian",
+        2: "vorasius",
+        3: "fallenking-salhadaar",
+        4: "vaelgor-ezzorak",
+        5: "lightblinded-vanguard",
+        6: "crown-of-the-cosmos",
+        7: "chimaerus-the-undreamt-god",
+        8: "beloren-child-of-alar",
+        9: "midnight-falls"
     }
     
     boss_kill_url_suffix = {
@@ -187,7 +188,7 @@ async def print_guild_ranks(interaction, tier, limit):
     season="1/2/3",
     limit="Number of guilds to display (or 'all' for full list)"
 )
-async def get_data(interaction, season: int = 3, limit: str = '10'):
+async def get_data(interaction, season: int = 1, limit: str = '10'):
     await print_guild_ranks(interaction, season, limit)
 
 # Command to print player ranks in the current M+ season
