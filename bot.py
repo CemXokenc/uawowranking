@@ -32,25 +32,8 @@ async def fetch_guild_data(guild_url, tier):
         2: "tier-mn-2",
         3: "tier-mn-3"
     }
+
     raid = switch_dict.get(tier)
-    
-    current_bosses_names = {
-        1: "imperator-averzian",
-        2: "vorasius",
-        3: "fallenking-salhadaar",
-        4: "vaelgor-ezzorak",
-        5: "lightblinded-vanguard",
-        6: "crown-of-the-cosmos",
-        7: "chimaerus-the-undreamt-god",
-        8: "beloren-child-of-alar",
-        9: "midnight-falls"
-    }
-    
-    boss_kill_url_suffix = {
-        "M": "&difficulty=mythic",
-        "H": "&difficulty=heroic",
-        "N": "&difficulty=normal",
-    }
 
     try:
         async with aiohttp.ClientSession() as session:            
@@ -63,46 +46,34 @@ async def fetch_guild_data(guild_url, tier):
 
                 guild_name = json_data['name']
                 guild_realm = json_data['realm']
-                guild_progress = json_data['raid_progression'][raid].get('summary', '0/0 N')
-                guild_rank = json_data['raid_rankings'][raid]['mythic'].get('world', None)
-                
-                best_percent = 100.0
-                pull_count = 0
-                
-                try:
-                    current_progress = int(guild_progress.split("/")[0])
-                    if current_progress < 8:
-                        next_boss = current_bosses_names.get(current_progress + 1)
-                        if not next_boss:
-                            raise ValueError("Invalid boss number")
-                         
-                        region, realm, guild = guild_url.split("&")
-                        formatted_region = region.replace("region=", "")
-                        formatted_realm = realm.replace("%20", "-").replace("realm=", "")
-                        formatted_guild = guild.replace("name=", "guild=")
-                        
-                        difficulty = guild_progress[-1]
-                        boss_kill_url = (
-                            f"https://raider.io/api/guilds/boss-kills?raid={raid}"
-                            f"{boss_kill_url_suffix.get(difficulty, '')}&region={formatted_region}&realm={formatted_realm}&{formatted_guild}&boss={next_boss}"
-                        )
-                        
-                        async with session.get(boss_kill_url, ssl=False) as boss_response:
-                            if boss_response.status != 422:                                  
-                                boss_data = await boss_response.json()
-                                kill_details = boss_data.get('killDetails', {}).get('attempt', {})
-                                best_percent = kill_details.get('bestPercent', 100.0)
-                                pull_count = kill_details.get('pullCount', 0)                            
-                except Exception as e:
-                    print(f"Error processing guild progress for {guild_name}: {e}")
-                
+
+                raid_data = json_data['raid_progression'].get(raid)
+                if not raid_data:
+                    return None
+
+                guild_progress = raid_data.get('summary', '0/0 N')
+
+                # 🔥 ВАЖЛИВО: беремо difficulty з прогресу
+                difficulty = guild_progress.split()[-1][0]
+
+                difficulty_map = {
+                    'M': 'mythic',
+                    'H': 'heroic',
+                    'N': 'normal'
+                }
+
+                ranking_data = json_data['raid_rankings'].get(raid, {})
+                rank_data = ranking_data.get(difficulty_map.get(difficulty), {})
+
+                guild_rank = rank_data.get('world', None)
+
                 return {                    
                     "name": guild_name,
                     "realm": guild_realm,
                     "progress": guild_progress,
                     "rank": guild_rank,
-                    "best_percent": best_percent,
-                    "pull_count": pull_count
+                    "best_percent": 100.0,
+                    "pull_count": 0
                 }
 
     except Exception as e:
@@ -145,10 +116,29 @@ async def print_guild_ranks(interaction, tier, limit):
 
         # Universal sorting by difficulty and progression, then by rank
         def custom_sort_key(guild):
-            progression, difficulty = guild["progress"].split(" ")
-            difficulty_order = {'M': 0, 'H': 1, 'N': 2}
-            progression_number = int(progression.split('/')[0])
-            return (difficulty_order.get(difficulty, 3), -progression_number, guild["rank"])
+            try:
+                parts = guild["progress"].split()
+
+                progression = parts[0]       # "3/9"
+                difficulty = parts[1][0]     # "H", "M", "N"
+
+                difficulty_order = {'M': 0, 'H': 1, 'N': 2}
+                progression_number = int(progression.split('/')[0])
+
+                rank = guild.get("rank")
+                if rank in (None, 0):
+                    rank = 999999
+
+                return (
+                    difficulty_order.get(difficulty, 3),
+                    -progression_number,
+                    rank,
+                    guild.get("name", "")
+                )
+
+            except Exception as e:
+                print(f"Sort error for guild {guild.get('name')}: {e}")
+                return (99, 0, 999999, "")
 
         # Sort guilds using the universal rule
         sorted_guilds = sorted(guilds, key=custom_sort_key)
