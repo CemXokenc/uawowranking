@@ -23,14 +23,14 @@ def read_guild_data(file_path='uaguildlist.txt'):
         return []
 
 # Asynchronous function to fetch guild data
-async def fetch_guild_data(guild_url, tiertier):
+async def fetch_guild_data(guild_url, tier):
     prefix = "http://raider.io/api/v1/guilds/profile?"
     postfix = "&fields=raid_rankings,raid_progression"
     
     switch_dict = {
         1: "tier-mn-1",
-        2: "",
-        3: ""
+        2: "tier-mn-2",
+        3: "tier-mn-3"
     }
     raid = switch_dict.get(tier)
     
