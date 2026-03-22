@@ -32,6 +32,24 @@ async def fetch_guild_data(guild_url, tier):
         2: "tier-mn-2",
         3: "tier-mn-3"
     }
+    
+    current_bosses_names = {
+        1: "imperator-averzian",
+        2: "vorasius",
+        3: "fallenking-salhadaar",
+        4: "chimaerus-the-undreamt-god",
+        5: "vaelgor-ezzorak",
+        6: "lightblinded-vanguard",
+        7: "crown-of-the-cosmos",
+        8: "beloren-child-of-alar",
+        9: "midnight-falls",
+    }
+
+    difficulty_name_map = {
+        "M": "mythic",
+        "H": "heroic",
+        "N": "normal"
+    }
 
     raid = switch_dict.get(tier)
 
@@ -53,27 +71,50 @@ async def fetch_guild_data(guild_url, tier):
 
                 guild_progress = raid_data.get('summary', '0/0 N')
 
-                # 🔥 ВАЖЛИВО: беремо difficulty з прогресу
-                difficulty = guild_progress.split()[-1][0]
-
-                difficulty_map = {
-                    'M': 'mythic',
-                    'H': 'heroic',
-                    'N': 'normal'
-                }
+                difficulty_letter = guild_progress[-1]  # "H", "M" або "N"
+                difficulty = difficulty_name_map.get(difficulty_letter, "")
 
                 ranking_data = json_data['raid_rankings'].get(raid, {})
-                rank_data = ranking_data.get(difficulty_map.get(difficulty), {})
+                rank_data = ranking_data.get(difficulty, {})
 
                 guild_rank = rank_data.get('world', None)
+                
+                best_percent = 100.0
+                pull_count = 0
+                
+                try:
+                    current_progress = int(guild_progress.split("/")[0])
+                    if current_progress < 9:
+                        next_boss = current_bosses_names.get(current_progress + 1)
+                        if not next_boss:
+                            raise ValueError("Invalid boss number")
+                         
+                        region, realm, guild = guild_url.split("&")
+                        formatted_region = region.replace("region=", "")
+                        formatted_realm = realm.replace("%20", "-").replace("realm=", "")
+                        formatted_guild = guild.replace("name=", "guild=")
+                        
+                        boss_kill_url = (
+                            f"https://raider.io/api/guilds/boss-kills?raid={raid}"
+                            f"&difficulty={difficulty}&region={formatted_region}&realm={formatted_realm}&{formatted_guild}&boss={next_boss}"
+                        )
+                        
+                        async with session.get(boss_kill_url, ssl=False) as boss_response:
+                            if boss_response.status != 422:                                  
+                                boss_data = await boss_response.json()
+                                kill_details = boss_data.get('killDetails', {}).get('attempt', {})
+                                best_percent = kill_details.get('bestPercent', 100.0)
+                                pull_count = kill_details.get('pullCount', 0)                            
+                except Exception as e:
+                    print(f"Error processing guild progress for {guild_name}: {e}")
 
                 return {                    
                     "name": guild_name,
                     "realm": guild_realm,
                     "progress": guild_progress,
                     "rank": guild_rank,
-                    "best_percent": 100.0,
-                    "pull_count": 0
+                    "best_percent": best_percent,
+                    "pull_count": pull_count,
                 }
 
     except Exception as e:
