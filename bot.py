@@ -36,8 +36,8 @@ async def fetch_guild_data(guild_url, tier):
     current_bosses_names = {
         1: "imperator-averzian",
         2: "vorasius",
-        3: "fallenking-salhadaar",
-        4: "chimaerus-the-undreamt-god",
+        3: "chimaerus-the-undreamt-god",
+        4: "fallenking-salhadaar",
         5: "vaelgor-ezzorak",
         6: "lightblinded-vanguard",
         7: "crown-of-the-cosmos",

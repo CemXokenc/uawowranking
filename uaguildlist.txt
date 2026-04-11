@@ -22,6 +22,7 @@ region=eu&realm=Tarren Mill&name=QuadHorders
 region=eu&realm=Tarren Mill&name=Sich Happens Legion
 region=eu&realm=Tarren Mill&name=TheHorsemen
 region=eu&realm=Tarren Mill&name=Shadow of endless flame
+region=eu&realm=Tarren Mill&name=Brave like U
 region=eu&realm=Hellscream&name=Grim
 region=eu&realm=Howling Fjord&name=Нехай Щастить
 region=eu&realm=Howling Fjord&name=Бавовна
@@ -59,6 +60,7 @@ region=eu&realm=Silvermoon&name=BURSHTYN
 region=eu&realm=Silvermoon&name=Knights of Elune
 region=eu&realm=Silvermoon&name=DUSHA
 region=eu&realm=Silvermoon&name=Azurion
+region=eu&realm=Silvermoon&name=Winter Roses
 region=eu&realm=Kazzak&name=Borsch Battalion
 region=eu&realm=Kazzak&name=Hwg
 region=eu&realm=Kazzak&name=UKRAINIAN GUILD
