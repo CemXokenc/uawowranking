@@ -23,6 +23,9 @@ region=eu&realm=Tarren Mill&name=Sich Happens Legion
 region=eu&realm=Tarren Mill&name=TheHorsemen
 region=eu&realm=Tarren Mill&name=Shadow of endless flame
 region=eu&realm=Tarren Mill&name=Brave like U
+region=eu&realm=Tarren Mill&name=Precedent UA
+region=eu&realm=Tarren Mill&name=Kentea Bag
+region=eu&realm=Tarren Mill&name=Alpha Vanguard
 region=eu&realm=Hellscream&name=Grim
 region=eu&realm=Howling Fjord&name=Нехай Щастить
 region=eu&realm=Howling Fjord&name=Бавовна
