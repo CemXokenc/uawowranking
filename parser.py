@@ -6,7 +6,7 @@ import time
 error_urls = []  # List to store URLs that returned errors during requests
 
 # Function to read guild data from the file
-def read_guild_data(file_path=r'C:\Users\Administrator\Desktop\uaguildlist.txt'):
+def read_guild_data(file_path=r'uaguildlist.txt'):
     try:
         with open(file_path, 'r', encoding='utf-8') as file:
             return [line.strip() for line in file.readlines()]
@@ -15,7 +15,7 @@ def read_guild_data(file_path=r'C:\Users\Administrator\Desktop\uaguildlist.txt')
         return []
 
 # Function to read additional characters from a file
-def read_additional_characters(file_path=r'C:\Users\Administrator\Desktop\addCharacters.txt'):
+def read_additional_characters(file_path=r'addCharacters.txt'):
     try:
         with open(file_path, 'r', encoding='utf-8') as file:
             characters = []
@@ -139,7 +139,7 @@ async def main():
             await process_guild(session, prefix + url + postfix, data_dict)
 
     # Save results to JSON
-    with open(r'C:\Users\Administrator\Desktop\members.json', 'w', encoding='utf-8') as file:
+    with open(r'members.json', 'w', encoding='utf-8') as file:
         json.dump(list(data_dict.values()), file, ensure_ascii=False, indent=2)
 
 # Measure the execution time
