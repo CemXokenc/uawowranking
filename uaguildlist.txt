@@ -43,6 +43,8 @@ region=eu&realm=Terokkar&name=Neutral Chaotic
 region=eu&realm=Terokkar&name=Indomiti
 region=eu&realm=Terokkar&name=Contra Spem Spero
 region=eu&realm=Terokkar&name=Ukraina
+region=eu&realm=Terokkar&name=Mistblossom Vanguards
+region=eu&realm=Terokkar&name=Sons Of KhazGoroth
 region=eu&realm=Silvermoon&name=Mythologeme
 region=eu&realm=Silvermoon&name=Alphalogeme
 region=eu&realm=Silvermoon&name=MRIYA
@@ -68,6 +70,7 @@ region=eu&realm=Kazzak&name=Borsch Battalion
 region=eu&realm=Kazzak&name=Hwg
 region=eu&realm=Kazzak&name=UKRAINIAN GUILD
 region=eu&realm=Kazzak&name=Chomu b ni
+region=eu&realm=Kazzak&name=AZOV
 region=eu&realm=Ravencrest&name=Viysko NightElfiyske
 region=eu&realm=Ravencrest&name=Ababagalamaga
 region=eu&realm=Ravencrest&name=Tovarystvo Zolotyy Husak
