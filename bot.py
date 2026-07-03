@@ -37,18 +37,6 @@ async def fetch_guild_data(guild_url, tier):
         2: "tier-mn-2",
         3: "tier-mn-3"
     }
-    
-    current_bosses_names = {
-        1: "imperator-averzian",
-        2: "vorasius",
-        3: "chimaerus-the-undreamt-god",
-        4: "fallenking-salhadaar",
-        5: "vaelgor-ezzorak",
-        6: "lightblinded-vanguard",
-        7: "crown-of-the-cosmos",
-        8: "beloren-child-of-alar",
-        9: "midnight-falls",
-    }
 
     difficulty_name_map = {
         "M": "mythic",
@@ -83,33 +71,46 @@ async def fetch_guild_data(guild_url, tier):
                 rank_data = ranking_data.get(difficulty, {})
 
                 guild_rank = rank_data.get('world', None)
-                
+
                 best_percent = 100.0
                 pull_count = 0
-                
+
                 try:
-                    current_progress = int(guild_progress.split("/")[0])
-                    if current_progress < 9:
-                        next_boss = current_bosses_names.get(current_progress + 1)
-                        if not next_boss:
-                            raise ValueError("Invalid boss number")
-                         
-                        region, realm, guild = guild_url.split("&")
-                        formatted_region = region.replace("region=", "")
-                        formatted_realm = realm.replace("%20", "-").replace("realm=", "")
-                        formatted_guild = guild.replace("name=", "guild=")
-                        
-                        boss_kill_url = (
-                            f"https://raider.io/api/guilds/boss-kills?raid={raid}"
-                            f"&difficulty={difficulty}&region={formatted_region}&realm={formatted_realm}&{formatted_guild}&boss={next_boss}"
-                        )
-                        
-                        async with session.get(boss_kill_url, ssl=False) as boss_response:
-                            if boss_response.status != 422:                                  
-                                boss_data = await boss_response.json()
-                                kill_details = boss_data.get('killDetails', {}).get('attempt', {})
-                                best_percent = kill_details.get('bestPercent', 100.0)
-                                pull_count = kill_details.get('pullCount', 0)                            
+                    # Розбираємо "X/Y D" -> current=X, total=Y
+                    progress_part = guild_progress.split()[0]  # "9/9"
+                    current_progress, total_bosses = (int(x) for x in progress_part.split('/'))
+
+                    boss_is_killed = current_progress >= total_bosses
+
+                    region, realm, guild = guild_url.split("&")
+                    formatted_region = region.replace("region=", "")
+                    formatted_realm = realm.replace("%20", "-").replace("realm=", "")
+                    formatted_guild = guild.replace("name=", "guild=")
+
+                    boss_attempts_url = (
+                        f"https://raider.io/api/v1/live-tracking/guild/boss-attempts?raid={raid}"
+                        f"&boss=latest&difficulty={difficulty}&region={formatted_region}"
+                        f"&realm={formatted_realm}&{formatted_guild}&period=until_kill"
+                    )
+
+                    async with session.get(boss_attempts_url, ssl=False) as attempts_response:
+                        if attempts_response.status == 200:
+                            attempts_data = await attempts_response.json()
+                            attempts_list = attempts_data.get('attempts', [])
+                            wipes_count = len(attempts_list)
+
+                            if boss_is_killed:
+                                # Кіл-пул не потрапляє в attempts, тому додаємо його вручну.
+                                # Відсоток не показуємо, бос вже мертвий -> лишаємо 100.0
+                                pull_count = wipes_count + 1 if wipes_count > 0 else 0
+                                best_percent = 100.0
+                            else:
+                                # Бос ще не вбитий, всі записи в attempts - це вайпи по факту
+                                pull_count = wipes_count
+                                if attempts_list:
+                                    best_percent = min(
+                                        a.get('overallPercent', 100.0) for a in attempts_list
+                                    )
                 except Exception as e:
                     print(f"Error processing guild progress for {guild_name}: {e}")
 
@@ -438,7 +439,7 @@ async def tournament_custom(interaction, top: int = 10, format: str = "new"):
     top="Number of players to display (default: 10)",
     format="Data source format: new or old (default: old)"
 )
-async def tournament(interaction: discord.Interaction, guild: str = "Фортеця", top: int = 10, format: str = "old"):
+async def tournament(interaction: discord.Interaction, guild: str = "Фортеця", top: int = 15, format: str = "old"):
     try:
         with open("members.json", "r", encoding="utf-8") as f:
             members_data = json.load(f)

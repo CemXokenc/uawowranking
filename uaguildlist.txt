@@ -70,6 +70,7 @@ region=eu&realm=Kazzak&name=Hwg
 region=eu&realm=Kazzak&name=UKRAINIAN GUILD
 region=eu&realm=Kazzak&name=Chomu b ni
 region=eu&realm=Kazzak&name=AZOV
+region=eu&realm=Kazzak&name=Not My Fault
 region=eu&realm=Ravencrest&name=Viysko NightElfiyske
 region=eu&realm=Ravencrest&name=Ababagalamaga
 region=eu&realm=Ravencrest&name=Tovarystvo Zolotyy Husak
@@ -82,6 +83,7 @@ region=eu&realm=Twisting Nether&name=Enter Game Mode
 region=eu&realm=Draenor&name=FavouriteWorstNightmare
 region=eu&realm=Draenor&name=Ukrainian Cossacks
 region=eu&realm=Draenor&name=Precedent UA
+region=eu&realm=Draenor&name=Tuzozawry
 region=eu&realm=Gordunni&name=Героям слава
 region=eu&realm=Gordunni&name=Гуляйполе
 region=eu&realm=Gordunni&name=Квента
