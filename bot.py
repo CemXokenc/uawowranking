@@ -461,7 +461,7 @@ async def tournament(interaction: discord.Interaction, guild: str = "Форте�
 
 @tree.command(name="uwf", description="Ukrainian WoW First ranks")
 @app_commands.describe(
-    mode="df | tww | champs | stats"
+    mode="df | tww | md | champs | stats"
 )
 async def uwf(
     interaction: discord.Interaction,
@@ -490,7 +490,7 @@ async def uwf(
             continue
 
         # Expansion
-        if stripped in {"Dragonflight", "The War Within"}:
+        if stripped in {"Dragonflight", "The War Within", "Midnight"}:
             current_expansion = stripped
             continue
 
@@ -531,6 +531,9 @@ async def uwf(
 
         output.append("\n## The War Within")
         output += build_expansion(data, "The War Within")
+        
+        output.append("\n## Midnight")
+        output += build_expansion(data, "Midnight")
 
     elif mode.lower() == "df":
         output.append("## Dragonflight")
@@ -539,6 +542,10 @@ async def uwf(
     elif mode.lower() == "tww":
         output.append("## The War Within")
         output += build_expansion(data, "The War Within")
+        
+    elif mode.lower() == "md":
+        output.append("## Midnight")
+        output += build_expansion(data, "Midnight")
 
     elif mode.lower() == "champs":
         output.append("## 🏆 Champions")
