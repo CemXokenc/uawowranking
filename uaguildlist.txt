@@ -92,3 +92,4 @@ region=eu&realm=Eversong&name=Харцизи
 region=eu&realm=Eversong&name=Мы с Украины
 region=eu&realm=Soulflayer&name=Поляна Квасова
 region=us&realm=Illidan&name=MOTAHKA
+region=us&realm=Burning Legion&name=Brovary Hills

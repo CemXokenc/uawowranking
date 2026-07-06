@@ -201,10 +201,10 @@ async def print_guild_ranks(interaction, tier, limit):
             guild_info = [f"{i + 1}. {guild['name']}, {guild['realm']}, {guild['progress']}, {guild['rank']} rank"]
 
             # Append best_percent and pull_count only if the conditions are met
-            if not (guild["best_percent"] == 100):
-                guild_info.append(f"{guild['best_percent']}% best")
             if not (guild["pull_count"] == 0 or guild["pull_count"] == None):
                 guild_info.append(f"{guild['pull_count']} pulls")
+            if not (guild["best_percent"] == 100):
+                guild_info.append(f"{guild['best_percent']}% best")
 
             # Join all parts into a single line
             formatted_guilds.append(", ".join(guild_info))
