@@ -522,33 +522,27 @@ async def uwf(
     # -------------------------
     # MODE HANDLING
     # -------------------------
-    output = []
 
     if mode is None:
-        # FULL LIST
-        output.append("## Dragonflight")
-        output += build_expansion(data, "Dragonflight")
-
-        output.append("\n## The War Within")
-        output += build_expansion(data, "The War Within")
-        
-        output.append("\n## Midnight")
-        output += build_expansion(data, "Midnight")
+        await send_expansion(interaction, "Dragonflight", data, "Dragonflight")
+        await send_expansion(interaction, "The War Within", data, "The War Within")
+        await send_expansion(interaction, "Midnight", data, "Midnight")
+        return
 
     elif mode.lower() == "df":
-        output.append("## Dragonflight")
-        output += build_expansion(data, "Dragonflight")
+        await send_expansion(interaction, "Dragonflight", data, "Dragonflight")
+        return
 
     elif mode.lower() == "tww":
-        output.append("## The War Within")
-        output += build_expansion(data, "The War Within")
-        
+        await send_expansion(interaction, "The War Within", data, "The War Within")
+        return
+
     elif mode.lower() == "md":
-        output.append("## Midnight")
-        output += build_expansion(data, "Midnight")
+        await send_expansion(interaction, "Midnight", data, "Midnight")
+        return
 
     elif mode.lower() == "champs":
-        output.append("## 🏆 Champions")
+        output = ["## 🏆 Champions"]
 
         sorted_champs = sorted(
             champs_counter.items(),
@@ -560,8 +554,11 @@ async def uwf(
             output.append(f"{str(i).rjust(2)}. {guild} — {wins} wins")
         output.append("```")
 
+        await interaction.followup.send("\n".join(output))
+        return
+
     elif mode.lower() == "stats":
-        output.append("## 📊 Guild statistics")
+        output = ["## 📊 Guild statistics"]
 
         sorted_stats = sorted(
             guild_stats.items(),
@@ -575,9 +572,11 @@ async def uwf(
             )
         output.append("```")
 
+        await interaction.followup.send("\n".join(output))
+        return
+
     else:
         await interaction.followup.send("Unknown mode.")
-        return
 
     await send_long_message(interaction, "\n".join(output))
 
@@ -611,6 +610,12 @@ def build_expansion(data, expansion_name):
         result.append("```")
 
     return result
+    
+async def send_expansion(interaction, title, data, expansion):
+    await interaction.followup.send(
+        f"## {title}\n" +
+        "\n".join(build_expansion(data, expansion))
+    )
         
 # Command "About us"
 @tree.command(name="about_us", description="About us")
