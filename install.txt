@@ -3,3 +3,4 @@ install python
 pip install aiohttp discord.py app_commands
 python.exe -m pip install --upgrade pip
 pip install pandas
+python -m pip install certifi
