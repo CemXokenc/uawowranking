@@ -66,6 +66,7 @@ region=eu&realm=Silvermoon&name=DUSHA
 region=eu&realm=Silvermoon&name=Azurion
 region=eu&realm=Silvermoon&name=Winter Roses
 region=eu&realm=Silvermoon&name=How We Met Your CE
+region=eu&realm=Silvermoon&name=Murlocalypsis
 region=eu&realm=Kazzak&name=Borsch Battalion
 region=eu&realm=Kazzak&name=Hwg
 region=eu&realm=Kazzak&name=UKRAINIAN GUILD
