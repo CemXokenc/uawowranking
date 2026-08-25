@@ -34,8 +34,8 @@ async def fetch_guild_data(guild_url, tier):
     
     switch_dict = {
         1: "tier-mn-1",
-        2: "tier-mn-2",
-        3: "tier-mn-3"
+        2: "the-venomous-abyss",
+        3: ""
     }
 
     difficulty_name_map = {
@@ -76,12 +76,6 @@ async def fetch_guild_data(guild_url, tier):
                 pull_count = 0
 
                 try:
-                    # Розбираємо "X/Y D" -> current=X, total=Y
-                    progress_part = guild_progress.split()[0]  # "9/9"
-                    current_progress, total_bosses = (int(x) for x in progress_part.split('/'))
-
-                    boss_is_killed = current_progress >= total_bosses
-
                     region, realm, guild = guild_url.split("&")
                     formatted_region = region.replace("region=", "")
                     formatted_realm = realm.replace("%20", "-").replace("realm=", "")
@@ -97,20 +91,24 @@ async def fetch_guild_data(guild_url, tier):
                         if attempts_response.status == 200:
                             attempts_data = await attempts_response.json()
                             attempts_list = attempts_data.get('attempts', [])
-                            wipes_count = len(attempts_list)
+                            pull_count = len(attempts_list)
 
-                            if boss_is_killed:
-                                # Кіл-пул не потрапляє в attempts, тому додаємо його вручну.
-                                # Відсоток не показуємо, бос вже мертвий -> лишаємо 100.0
-                                pull_count = wipes_count + 1 if wipes_count > 0 else 0
-                                best_percent = 100.0
+                            percents = [
+                                a.get('overallPercent')
+                                for a in attempts_list
+                                if a.get('overallPercent') is not None
+                            ]
+
+                            if percents:
+                                min_percent = min(percents)
+                                if min_percent <= 0:
+                                    # 0% = бос помер на цьому пулі -> вважаємо вбитим, % не показуємо
+                                    best_percent = 100.0
+                                else:
+                                    # Бос ще живий -> показуємо реальний найкращий %
+                                    best_percent = min_percent
                             else:
-                                # Бос ще не вбитий, всі записи в attempts - це вайпи по факту
-                                pull_count = wipes_count
-                                if attempts_list:
-                                    best_percent = min(
-                                        a.get('overallPercent', 100.0) for a in attempts_list
-                                    )
+                                best_percent = 100.0
                 except Exception as e:
                     print(f"Error processing guild progress for {guild_name}: {e}")
 
@@ -225,7 +223,7 @@ async def print_guild_ranks(interaction, tier, limit):
     season="1/2/3",
     limit="Number of guilds to display (or 'all' for full list)"
 )
-async def get_data(interaction, season: int = 1, limit: str = '10'):
+async def get_data(interaction, season: int = 2, limit: str = '10'):
     await print_guild_ranks(interaction, season, limit)
 
 # Command to print player ranks in the current M+ season
