@@ -67,6 +67,7 @@ region=eu&realm=Silvermoon&name=Azurion
 region=eu&realm=Silvermoon&name=Winter Roses
 region=eu&realm=Silvermoon&name=How We Met Your CE
 region=eu&realm=Silvermoon&name=Murlocalypsis
+region=eu&realm=Silvermoon&name=Ethera
 region=eu&realm=Kazzak&name=Borsch Battalion
 region=eu&realm=Kazzak&name=Hwg
 region=eu&realm=Kazzak&name=UKRAINIAN GUILD
@@ -95,3 +96,4 @@ region=eu&realm=Eversong&name=Мы с Украины
 region=eu&realm=Soulflayer&name=Поляна Квасова
 region=us&realm=Illidan&name=MOTAHKA
 region=us&realm=Burning Legion&name=Brovary Hills
+region=us&realm=Galakrond&name=Пузата Хата
