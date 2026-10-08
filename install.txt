@@ -1,4 +1,18 @@
-install python
+--powershell
+
+-install Notepad++
+$path = "$env:TEMP\npp_installer.exe"
+Invoke-WebRequest -Uri "https://github.com/notepad-plus-plus/notepad-plus-plus/releases/download/v8.6.4/npp.8.6.4.Installer.x64.exe" -OutFile $path
+Start-Process -FilePath $path -Args "/S" -Verb RunAs -Wait
+Remove-Item $path
+
+-install Python 3.12
+$path = "$env:TEMP\python_installer.exe"
+Invoke-WebRequest -Uri "https://www.python.org/ftp/python/3.12.2/python-3.12.2-amd64.exe" -OutFile $path
+Start-Process -FilePath $path -Args "/quiet InstallAllUsers=1 PrependPath=1" -Verb RunAs -Wait
+Remove-Item $path
+
+--cmd
 
 pip install aiohttp discord.py app_commands
 python.exe -m pip install --upgrade pip
