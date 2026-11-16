@@ -7,10 +7,15 @@ import json
 import discord
 import aiohttp
 import asyncio
+import time
 import re
 from discord import app_commands
 from collections import defaultdict     
 from config import token
+
+SEASON = "season-mn-2"          
+CUTOFF_CACHE_SECONDS = 600      
+cutoff_cache = {}
 
 # Initialize intents and client
 intents = discord.Intents.all()
@@ -131,6 +136,39 @@ async def fetch_guild_data(guild_url, tier):
     except Exception as e:
         print(f"An error occurred while fetching guild data for {guild_url}: {e}")
         return None
+
+# Мінімальний RIO для топ-0.1% регіону (p999, всі фракції) з raider.io
+async def fetch_top_cutoff(region):
+    now = time.time()
+    cached = cutoff_cache.get(region)
+    if cached and now - cached[0] < CUTOFF_CACHE_SECONDS:
+        return cached[1]
+
+    url = f"https://raider.io/api/v1/mythic-plus/season-cutoffs?season={SEASON}&region={region}"
+    for attempt in range(2):
+        try:
+            timeout = aiohttp.ClientTimeout(total=10)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.get(url) as response:
+                    if response.status == 200:
+                        data = await response.json(content_type=None)
+                        value = float(data["cutoffs"]["p999"]["all"]["quantileMinValue"])
+                        cutoff_cache[region] = (now, value)
+                        return value
+                    print(f"Cutoff request failed for region={region}: HTTP {response.status}")
+        except Exception as e:
+            print(f"Cutoff request error for region={region}: {e}")
+        await asyncio.sleep(1)
+
+    # не вдалося отримати: беремо старе значення, якщо воно є; інакше без виділення
+    return cached[1] if cached else None
+
+# Префікс "0.1% -> " для гравців, чий загальний RIO в топ-0.1% свого регіону
+def top_marker(member, cutoffs):
+    cutoff = cutoffs.get(member.get('region') or 'eu')
+    if cutoff is not None and max(member.get('rio_all', 0) or 0, 0) >= cutoff:
+        return "0.1% -> "
+    return ""
 
 # Function to send long messages in chunks
 async def send_long_message(interaction, message, chunk_size=2000):
@@ -330,14 +368,19 @@ async def rank(interaction, top: int = 10, classes: str = "all", guilds: str = "
         # Limit the number of displayed results
         members_data = members_data[:top]
 
+        # Відсікання топ-0.1% для регіонів, які є у видачі (await чекає лише цю команду, бот не блокується)
+        regions = list({(m.get('region') or 'eu') for m in members_data})
+        cutoff_values = await asyncio.gather(*[fetch_top_cutoff(r) for r in regions])
+        cutoffs = dict(zip(regions, cutoff_values))
+
         # Format header message
         header_message = f"Top {top} | Classes -> {classes} | Guilds -> {guilds} | Role -> {role} | Rio > {rio}"
 
         # Format and send the results
         if spec_number == 0:
-            result_message = "\n".join([f"{i + 1}. {member['name']} ({member['guild']}, {member['realm']}) - {member['active_spec_name']} {member['class']} - RIO {role}: {member['rio_' + role.lower()]}" for i, member in enumerate(members_data)])
+            result_message = "\n".join([f"{i + 1}. {top_marker(member, cutoffs)}{member['name']} ({member['guild']}, {member['realm']}) - {member['active_spec_name']} {member['class']} - RIO {role}: {member['rio_' + role.lower()]}" for i, member in enumerate(members_data)])
         else:
-            result_message = "\n".join([f"{i + 1}. {member['name']} ({member['guild']}, {member['realm']}) - {member['active_spec_name']} {member['class']} - RIO {role}: {member['spec_' + spec]}" for i, member in enumerate(members_data)])
+            result_message = "\n".join([f"{i + 1}. {top_marker(member, cutoffs)}{member['name']} ({member['guild']}, {member['realm']}) - {member['active_spec_name']} {member['class']} - RIO {role}: {member['spec_' + spec]}" for i, member in enumerate(members_data)])
 
         # Send the follow-up message after the processing is done
         await send_long_message(interaction, header_message + "\n------------------------------------------------------------\n" + result_message)
