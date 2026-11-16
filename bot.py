@@ -64,6 +64,13 @@ async def fetch_guild_data(guild_url, tier):
 
                 guild_progress = raid_data.get('summary', '0/0 N')
 
+                # Усі боси вбиті (напр. "8/8 M") -> відсоток найкращого пулу не показуємо
+                try:
+                    killed_s, total_s = guild_progress.split()[0].split('/')
+                    all_bosses_killed = int(killed_s) >= int(total_s) > 0
+                except Exception:
+                    all_bosses_killed = False
+
                 difficulty_letter = guild_progress[-1]  # "H", "M" або "N"
                 difficulty = difficulty_name_map.get(difficulty_letter, "")
 
@@ -101,7 +108,7 @@ async def fetch_guild_data(guild_url, tier):
 
                             if percents:
                                 min_percent = min(percents)
-                                if min_percent <= 0:
+                                if min_percent <= 0 or all_bosses_killed:
                                     # 0% = бос помер на цьому пулі -> вважаємо вбитим, % не показуємо
                                     best_percent = 100.0
                                 else:
